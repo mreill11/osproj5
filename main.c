@@ -15,12 +15,24 @@ how to use the page table and disk interfaces.
 #include <string.h>
 #include <errno.h>
 
+#define NOT_FOUND -1
+
 struct disk *disk;
 int numPageFaults = 0;
 int numDiskWrite = 0;
 int numDiskRead = 0;
 int runMode;            // RAND, FIFO, or CUSTOM
 int *ptArr;
+int count = 0;
+
+int search(int start, int end, int k) {
+    int i;
+    for (i = start; i <= end; i++) {
+        if (ptArr[i] == k)
+            return i;
+    }
+    return NOT_FOUND;
+}
 
 
 void page_fault_handler( struct page_table *pt, int page )
@@ -35,11 +47,42 @@ void page_fault_handler( struct page_table *pt, int page )
         numPageFaults++;
         numDiskWrite = 0;
         numDiskRead = 0;
+    } else if (runMode == 1) {
+        numPageFaults++;
+
+        int val = search(0, numFrames - 1, page);
+        int tmp = lrand48() % numFrames;
+
+        if (val > -1) {
+            page_table_set_entry(pt, page, val, PROT_READ|PROT_WRITE);
+            numPageFaults--;
+        } else if (count < numFrames) {
+            while (ptArr[tmp] != -1) {
+                tmp = lrand48() % numFrames;
+                numPageFaults++;
+            }
+
+            page_table_set_entry(pt, page, tmp, PROT_READ);
+            disk_read(disk, page, &pmem[tmp * PAGE_SIZE]);
+
+            numDiskRead++;
+            ptArr[tmp] = page;
+            count++;
+        } else {
+            disk_write(disk, ptArr[tmp], &pmem[tmp * PAGE_SIZE]);
+            disk_read(disk, page, &pmem[tmp * PAGE_SIZE]);
+
+            numDiskWrite++;
+            numDiskRead++;
+            
+            page_table_set_entry(pt, page, tmp, PROT_READ);
+            ptArr[tmp] = page;
+        }
+        page_table_print(pt);
     }
 
     //printf("page fault on page #%d\n",page);
-    page_table_print(pt);
-    exit(1);
+    //exit(1);
 }
 
 int main( int argc, char *argv[] )
@@ -66,7 +109,7 @@ int main( int argc, char *argv[] )
     for (loop = 0; loop < nframes; loop++)      // populate with -1
         ptArr[loop] = -1;
 
-    struct disk *disk = disk_open("myvirtualdisk",npages);
+    disk = disk_open("myvirtualdisk",npages);
     if(!disk) {
         fprintf(stderr,"couldn't create virtual disk: %s\n",strerror(errno));
         return 1;
@@ -81,7 +124,7 @@ int main( int argc, char *argv[] )
 
     char *virtmem = page_table_get_virtmem(pt);
 
-    char *physmem = page_table_get_physmem(pt);
+    //char *physmem = page_table_get_physmem(pt);
 
     if(!strcmp(program,"sort")) {
         sort_program(virtmem,npages*PAGE_SIZE);
