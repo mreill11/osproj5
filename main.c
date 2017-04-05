@@ -15,9 +15,28 @@ how to use the page table and disk interfaces.
 #include <string.h>
 #include <errno.h>
 
+struct disk *disk;
+int numPageFaults = 0;
+int numDiskWrite = 0;
+int numDiskRead = 0;
+
+
 void page_fault_handler( struct page_table *pt, int page )
 {
-    printf("page fault on page #%d\n",page);
+    int numPages = page_table_get_npages(pt);
+    int numFrames = page_table_get_nframes(pt);
+    char *pmem = page_table_get_physmem(pt);
+
+    if (numFrames >= numPages) {
+        printf("Page fault on page #%d\n", page);
+        page_table_set_entry(pt, page, page, PROT_READ|PROT_WRITE);
+        numPageFaults++;
+        numDiskWrite = 0;
+        numDiskRead = 0;
+    }
+
+    //printf("page fault on page #%d\n",page);
+    page_table_print(pt);
     exit(1);
 }
 
