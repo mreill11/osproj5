@@ -74,11 +74,36 @@ void page_fault_handler( struct page_table *pt, int page )
 
             numDiskWrite++;
             numDiskRead++;
-            
+
             page_table_set_entry(pt, page, tmp, PROT_READ);
             ptArr[tmp] = page;
         }
         page_table_print(pt);
+
+    } else if (runMode == 2) {
+        numPageFaults++;
+        int val = search(0, numFrames - 1, page);
+
+        if (val > -1) {
+            page_table_set_entry(pt, page, val, PROT_READ|PROT_WRITE);
+            count--;
+            numPageFaults--;
+        } else if (ptArr[count] == -1) {
+            page_table_set_entry(pt, page, count, PROT_READ);
+            disk_read(disk, page, &pmem[count * PAGE_SIZE]);
+            numDiskRead++;
+        } else {
+            disk_write(disk, ptArr[count], &pmem[count * PAGE_SIZE]);
+            disk_read(disk, page, &pmem[count * PAGE_SIZE]);
+            numDiskWrite++;
+            numDiskRead++;
+            page_table_set_entry(pt, page, count, PROT_READ);
+        }
+
+        ptArr[count] = page;
+        count = (count + 1) % numFrames;
+        page_table_print(pt);
+        
     }
 
     //printf("page fault on page #%d\n",page);
