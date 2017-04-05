@@ -19,6 +19,8 @@ struct disk *disk;
 int numPageFaults = 0;
 int numDiskWrite = 0;
 int numDiskRead = 0;
+int runMode;            // RAND, FIFO, or CUSTOM
+int *ptArr;
 
 
 void page_fault_handler( struct page_table *pt, int page )
@@ -50,6 +52,19 @@ int main( int argc, char *argv[] )
     int npages = atoi(argv[1]);
     int nframes = atoi(argv[2]);
     const char *program = argv[4];
+
+    // Parse run mode
+    if ((strcmp(argv[3], "rand")) == 0)
+        runMode = 1;
+    else if ((strcmp(argv[3], "fifo")) == 0)
+        runMode = 2;
+    else
+        runMode = 3;
+
+    ptArr = (int *) malloc(nframes * sizeof(int));
+    int loop;
+    for (loop = 0; loop < nframes; loop++)      // populate with -1
+        ptArr[loop] = -1;
 
     struct disk *disk = disk_open("myvirtualdisk",npages);
     if(!disk) {
