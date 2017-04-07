@@ -34,8 +34,7 @@ void page_fault_handler( struct page_table *pt, int page )
 {
     int numPages = page_table_get_npages(pt);       // Number of pages
     int numFrames = page_table_get_nframes(pt);     // Number of frames
-    char *pmem = page_table_get_physmem(pt);   
-    int *numFaultsOnPage = NULL;     // Physical memory pointer
+    char *pmem = page_table_get_physmem(pt);        // Physical memory pointer
     //char *scbits = page_table_get_virtsmem(pt);
 
     if (numFrames >= numPages) {    // Getting started
@@ -49,7 +48,6 @@ void page_fault_handler( struct page_table *pt, int page )
 
     } else if (runMode == 1) {      // RAND
         numPageFaults++;
-        numFaultsOnPage[page]++;
 
         int val = search(0, numFrames - 1, page);   // search page table array for page
         int tmp = lrand48() % numFrames;
@@ -118,46 +116,33 @@ void page_fault_handler( struct page_table *pt, int page )
  
 
     } else if (runMode == 3) {          // CUSTOM - second chance fifo
-            //we track the number of faults each page has produced
-            //and choose to replace the one with the fewest number 
-            int min = INT_MAX, i = 0, replace;
-            for(i = 0; i < page_table_get_npages(pt); i++)
-            {
-                if (numFaultsOnPage[i] < min)
-                {
-                    min = numFaultsOnPage[i];
-                    replace = i;
-                }
-            }
-            printf("Found page to replace\n");
-            for(i = 0; i < nframes; i++)
-            {
-                //replace stores the page to replace
-                //but now we need to find what frame
-                //the page is stored in.  That value
-                //will be in i.
-                if(ptArr[i] == replace)
-                    break;
-            }
-            printf("Found corresponding frame %d\n", i);
+        numPageFaults++;
+        int tmp = page % numFrames;
+        int val = search(0, numFrames - 1, page);
 
-            if(bits != PROT_READ)
-            {
-                disk_write(disk, ptArr[i], &physmem[i*PAGE_SIZE]);
-                ++nwrites;
-                //write to disk, now ready to replace   
-                printf("replacing frame %d and writing to disk\n", i);
-            }
-    
-            disk_read(disk, page, &physmem[i*PAGE_SIZE]);
-            printf("Read from disk\n");
-            ++nreads;
-            page_table_set_entry(pt, page, i, PROT_READ);
-            printf("Set page table entry for new page\n");
-            page_table_set_entry(pt, ptArr[i], 0, 0);
-            printf("Set page table entries, done\n");
-            
+        // Page has not been accessed on this round or the last
+
+        if (ptArr[tmp] == page || val > NOT_FOUND) {
+
+            page_table_set_entry(pt, page, tmp, PROT_READ|PROT_WRITE);
+            numPageFaults--;
+
+        } else if (ptArr[tmp] == NOT_FOUND) {  // page has not been read
+
+            page_table_set_entry(pt, page, tmp, PROT_READ);
+            disk_read(disk, page, &pmem[tmp * PAGE_SIZE]);
+            numDiskRead++;
+
+        } else {
+
+            disk_write(disk, ptArr[tmp], &pmem[tmp * PAGE_SIZE]);
+            disk_read(disk, page, &pmem[tmp * PAGE_SIZE]);
+            numDiskWrite++;
+            numDiskRead++;
+            page_table_set_entry(pt, page, tmp, PROT_READ);
         }
+
+        ptArr[tmp] = page;
 
     } else {
         printf("page fault on page #%d\n",page);
@@ -185,13 +170,6 @@ int main( int argc, char *argv[] )
     int npages = atoi(argv[1]);
     int nframes = atoi(argv[2]);
     const char *program = argv[4];
-
-    //setting up custom
-    numFaultsOnPage = realloc(numFaultsOnPage, npages*sizeof(int));
-    for (i = 0; i < npages; i++)
-    {
-        numFaultsOnPage[i] = 0;
-    }
 
     // Parse run mode
     if ((strcmp(argv[3], "rand")) == 0)
