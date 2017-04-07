@@ -126,7 +126,7 @@ void page_fault_handler( struct page_table *pt, int page )
         int min = INT_MAX;
         int i = 0;
         int replace;
-        //int tmp = page % numFrames;
+        int tmp = page % numFrames;
         //int val = search(0, numFrames - 1, page);
 
         for(i = 0; i < page_table_get_npages(pt); i++) {
@@ -142,16 +142,16 @@ void page_fault_handler( struct page_table *pt, int page )
             }
         }
 
-        if(bits != PROT_READ) {
+        if(val > NOT_FOUND) {
             disk_write(disk, ptArr[i], &pmem[i * PAGE_SIZE]);
             numDiskWrite++;
         }
 
         disk_read(disk, page, &pmem[i * PAGE_SIZE]);
         numDiskRead++;
-        page_table_set_entry(pt, page, i, PROT_READ);
+        //page_table_set_entry(pt, page, i, PROT_READ);
         //page_table_set_entry(pt, ptArr[i], 0, 0);
-        page_table_set_entry(pt, page, i, PROT_READ|PROT_WRITE);
+        page_table_set_entry(pt, page, tmp, PROT_READ|PROT_WRITE);
         //page_table_set_entry(pt, ptArr[i], 0, 0);
 
         // Page has not been accessed on this round or the last
