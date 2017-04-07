@@ -142,7 +142,7 @@ void page_fault_handler( struct page_table *pt, int page )
             }
         }
 
-        if(val > NOT_FOUND) {
+        /*if(val > NOT_FOUND) {
             disk_write(disk, ptArr[i], &pmem[i * PAGE_SIZE]);
             numDiskWrite++;
         }
@@ -152,11 +152,11 @@ void page_fault_handler( struct page_table *pt, int page )
         //page_table_set_entry(pt, page, i, PROT_READ);
         //page_table_set_entry(pt, ptArr[i], 0, 0);
         page_table_set_entry(pt, page, tmp, PROT_READ|PROT_WRITE);
-        //page_table_set_entry(pt, ptArr[i], 0, 0);
+        //page_table_set_entry(pt, ptArr[i], 0, 0);*/
 
         // Page has not been accessed on this round or the last
 
-        /*if (ptArr[tmp] == page || val > NOT_FOUND) {
+        if (ptArr[tmp] == page || val > NOT_FOUND) {
 
             page_table_set_entry(pt, page, tmp, PROT_READ|PROT_WRITE);
             numPageFaults--;
@@ -176,7 +176,7 @@ void page_fault_handler( struct page_table *pt, int page )
             page_table_set_entry(pt, page, tmp, PROT_READ);
         }
 
-        ptArr[tmp] = page;*/
+        ptArr[tmp] = page;
 
     } else {
         printf("page fault on page #%d\n",page);
