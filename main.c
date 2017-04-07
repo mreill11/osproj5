@@ -41,7 +41,7 @@ void page_fault_handler( struct page_table *pt, int page )
     int bits;
     int frame;
     //char *scbits = page_table_get_virtsmem(pt);
-    page_table_set_entry(pt, page, &frame, &bits);
+    page_table_get_entry(pt, page, &frame, &bits);
 
     if (numFrames >= numPages) {    // Getting started
         printf("Page fault on page #%d\n", page);
@@ -126,8 +126,8 @@ void page_fault_handler( struct page_table *pt, int page )
         int min = INT_MAX;
         int i = 0;
         int replace;
-        int tmp = page % numFrames;
-        int val = search(0, numFrames - 1, page);
+        //int tmp = page % numFrames;
+        //int val = search(0, numFrames - 1, page);
 
         for(i = 0; i < page_table_get_npages(pt); i++) {
             if (pageFaults[i] < min) {
