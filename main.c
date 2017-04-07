@@ -44,7 +44,7 @@ void page_fault_handler( struct page_table *pt, int page )
     page_table_get_entry(pt, page, &frame, &bits);
 
     if (numFrames >= numPages) {    // Getting started
-        printf("Page fault on page #%d\n", page);
+        //printf("Page fault on page #%d\n", page);
         
         page_table_set_entry(pt, page, page, PROT_READ|PROT_WRITE);
         numPageFaults++;
@@ -179,7 +179,7 @@ void page_fault_handler( struct page_table *pt, int page )
         ptArr[tmp] = page;
 
     } else {
-        printf("page fault on page #%d\n",page);
+        //printf("page fault on page #%d\n",page);
         exit(1);
     }
 
@@ -238,7 +238,7 @@ int main( int argc, char *argv[] )
 
     struct page_table *pt = page_table_create( npages, nframes, page_fault_handler );
     if(!pt) {
-        //fprintf(stderr,"couldn't create page table: %s\n",strerror(errno));
+        fprintf(stderr,"couldn't create page table: %s\n",strerror(errno));
         return 1;
     }
 
