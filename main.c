@@ -248,19 +248,22 @@ int main( int argc, char *argv[] )
 
     if(!strcmp(program,"sort")) {
         sort_program(virtmem,npages*PAGE_SIZE);
+        printf("Page Faults: %d\nDisk Writes: %d\nDisk Reads: %d\n", numPageFaults, numDiskWrite, numDiskRead);
 
     } else if(!strcmp(program,"scan")) {
         scan_program(virtmem,npages*PAGE_SIZE);
+        printf("Page Faults: %d\nDisk Writes: %d\nDisk Reads: %d\n", numPageFaults, numDiskWrite, numDiskRead);
 
     } else if(!strcmp(program,"focus")) {
         focus_program(virtmem,npages*PAGE_SIZE);
+        printf("Page Faults: %d\nDisk Writes: %d\nDisk Reads: %d\n", numPageFaults, numDiskWrite, numDiskRead);
 
     } else {
         fprintf(stderr,"unknown program: %s\n",argv[3]);
         return 1;
     }
     // Print stats about program run
-    printf("Page Faults: %d\nDisk Writes: %d\nDisk Reads: %d\n", numPageFaults, numDiskWrite, numDiskRead);
+    //printf("Page Faults: %d\nDisk Writes: %d\nDisk Reads: %d\n", numPageFaults, numDiskWrite, numDiskRead);
 
     page_table_delete(pt);
     disk_close(disk);

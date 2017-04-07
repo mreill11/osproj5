@@ -56,9 +56,9 @@ def graph_program(prog_name):
 	plt.plot(frame_numbers, rand_disk_reads, 'bs', label='Disk Reads')
 	plt.plot(frame_numbers, rand_disk_writes, 'g^', label='Disk Writes')
 	plt.legend(loc='upper left')
-	plt.title('rand page fault handler run on {} program'.format(prog_name))
-	plt.xlabel('frame number')
-	plt.ylabel('disk operations and page faults')
+	plt.title('RAND Page Fault Handler: {} program'.format(prog_name))
+	plt.xlabel('Frame #')
+	plt.ylabel('Disk Operations & Page Faults')
 	plt.show()
 
 	# plot fifo
@@ -66,9 +66,9 @@ def graph_program(prog_name):
 	plt.plot(frame_numbers, fifo_disk_reads, 'bs', label='Disk Reads')
 	plt.plot(frame_numbers, fifo_disk_writes, 'g^', label='Disk Writes')
 	plt.legend(loc='upper left')
-	plt.title('fifo page fault handler run on {} program'.format(prog_name))
-	plt.xlabel('frame number')
-	plt.ylabel('disk operations and page faults')
+	plt.title('FIFO Page Fault Handler: {} program'.format(prog_name))
+	plt.xlabel('Frame #')
+	plt.ylabel('Disk Operations & Page Faults')
 	plt.show()
 
 	# plot custom
@@ -76,9 +76,9 @@ def graph_program(prog_name):
 	plt.plot(frame_numbers, custom_disk_reads, 'bs', label='Disk Reads')
 	plt.plot(frame_numbers, custom_disk_writes, 'g^', label='Disk Writes')
 	plt.legend(loc='upper left')
-	plt.title('custom page fault handler run on {} program'.format(prog_name))
-	plt.xlabel('frame number')
-	plt.ylabel('disk operations and page faults')
+	plt.title('CUSTOM Page Fault Handler: {} program'.format(prog_name))
+	plt.xlabel('Frame #')
+	plt.ylabel('Disk Operations & Page Faults')
 	plt.show()
 
 	print "rand_page_faults {}".format(rand_page_faults)
