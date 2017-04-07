@@ -150,7 +150,8 @@ void page_fault_handler( struct page_table *pt, int page )
         disk_read(disk, page, &pmem[i * PAGE_SIZE]);
         numDiskRead++;
         page_table_set_entry(pt, page, i, PROT_READ);
-        page_table_set_entry(pt, ptArr[i], 0, 0);
+        //page_table_set_entry(pt, ptArr[i], 0, 0);
+        page_table_set_entry(pt, page, i, PROT_READ|PROT_WRITE);
         //page_table_set_entry(pt, ptArr[i], 0, 0);
 
         // Page has not been accessed on this round or the last
