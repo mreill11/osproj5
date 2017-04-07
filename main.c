@@ -120,7 +120,7 @@ void page_fault_handler( struct page_table *pt, int page )
 
     } else if (runMode == 3) {          // CUSTOM - second chance fifo
         numPageFaults++;
-        int min = INT_MAX, 
+        int min = INT_MAX;
         int i = 0;
         int replace;
         int tmp = page % numFrames;
@@ -133,7 +133,7 @@ void page_fault_handler( struct page_table *pt, int page )
             }
         }
 
-        for(i = 0; i < nframes; i++) {
+        for(i = 0; i < numFrames; i++) {
             if(ptArr[i] == replace) {
                 break;
             }
