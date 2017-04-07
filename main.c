@@ -38,7 +38,9 @@ void page_fault_handler( struct page_table *pt, int page )
     int numFrames = page_table_get_nframes(pt);     // Number of frames
     char *pmem = page_table_get_physmem(pt);        // Physical memory pointer
     pageFaults[page]++;
+    int bits;
     //char *scbits = page_table_get_virtsmem(pt);
+    page_table_set_entry(pt, page, &frame, &bits);
 
     if (numFrames >= numPages) {    // Getting started
         printf("Page fault on page #%d\n", page);
@@ -139,7 +141,7 @@ void page_fault_handler( struct page_table *pt, int page )
             }
         }
 
-        if(val != PROT_READ) {
+        if(bits != PROT_READ) {
             disk_write(disk, ptArr[i], &pmem[i * PAGE_SIZE]);
             numDiskWrite++;
         }
