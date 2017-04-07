@@ -39,6 +39,7 @@ void page_fault_handler( struct page_table *pt, int page )
     char *pmem = page_table_get_physmem(pt);        // Physical memory pointer
     pageFaults[page]++;
     int bits;
+    int frame;
     //char *scbits = page_table_get_virtsmem(pt);
     page_table_set_entry(pt, page, &frame, &bits);
 
