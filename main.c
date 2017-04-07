@@ -17,23 +17,17 @@ how to use the page table and disk interfaces.
 
 #define NOT_FOUND -1
 
+int search(int start, int end, int k);
+
 struct disk *disk;      // disk
 int numPageFaults = 0;  // Number of page faults
 int numDiskWrite = 0;   // Number of disk writes
 int numDiskRead = 0;    // Number of disk reads
 int runMode;            // RAND, FIFO, or CUSTOM
-int *ptArr;
+int *ptArr;             // Page Table array
 int *scArr;
-int count = 0;
+int count = 0;          // counter
 
-int search(int start, int end, int k) {         // simple linear search function
-    int i;
-    for (i = start; i <= end; i++) {
-        if (ptArr[i] == k)
-            return i;
-    }
-    return NOT_FOUND;
-}
 
 void page_fault_handler( struct page_table *pt, int page )
 {
@@ -54,25 +48,29 @@ void page_fault_handler( struct page_table *pt, int page )
     } else if (runMode == 1) {      // RAND
         numPageFaults++;
 
-        int val = search(0, numFrames - 1, page);
+        int val = search(0, numFrames - 1, page);   // search page table array for page
         int tmp = lrand48() % numFrames;
 
-        if (val > -1) {
+        if (val > NOT_FOUND) {              // Page was found, set entry and continue
             page_table_set_entry(pt, page, val, PROT_READ|PROT_WRITE);
             numPageFaults--;
-        } else if (count < numFrames) {
-            while (ptArr[tmp] != -1) {
+        } else if (count < numFrames) { // haven't been through all of the frames
+
+            // find next page until a page already accessed is found
+            while (ptArr[tmp] != NOT_FOUND) {
                 tmp = lrand48() % numFrames;
                 numPageFaults++;
             }
 
+            // set entry and read from disk
             page_table_set_entry(pt, page, tmp, PROT_READ);
             disk_read(disk, page, &pmem[tmp * PAGE_SIZE]);
 
+            // increment tracking variables
             numDiskRead++;
-            ptArr[tmp] = page;
             count++;
-        } else {
+            ptArr[tmp] = page;
+        } else { // found all frames, read and write from virtmem
             disk_write(disk, ptArr[tmp], &pmem[tmp * PAGE_SIZE]);
             disk_read(disk, page, &pmem[tmp * PAGE_SIZE]);
 
@@ -82,43 +80,53 @@ void page_fault_handler( struct page_table *pt, int page )
             page_table_set_entry(pt, page, tmp, PROT_READ);
             ptArr[tmp] = page;
         }
-        //page_table_print(pt);
 
     } else if (runMode == 2) {          // FIFO
         numPageFaults++;
-        int val = search(0, numFrames - 1, page);
+        int val = search(0, numFrames - 1, page); // search ptArr for page
 
-        if (val > -1) {
+        if (val > NOT_FOUND) {      // page in ptArr
+
             page_table_set_entry(pt, page, val, PROT_READ|PROT_WRITE);
             count--;
             numPageFaults--;
-        } else if (ptArr[count] == -1) {
+
+        } else if (ptArr[count] == NOT_FOUND) {
+
+            // Page[count] has not been accessed
+            // set entry at count and read from count * PAGE_SIZE
+
             page_table_set_entry(pt, page, count, PROT_READ);
             disk_read(disk, page, &pmem[count * PAGE_SIZE]);
             numDiskRead++;
+
         } else {
+            // Page fault, write and read from pmem
             disk_write(disk, ptArr[count], &pmem[count * PAGE_SIZE]);
             disk_read(disk, page, &pmem[count * PAGE_SIZE]);
             numDiskWrite++;
             numDiskRead++;
             page_table_set_entry(pt, page, count, PROT_READ);
+
         }
 
         ptArr[count] = page;
         count = (count + 1) % numFrames;
-        //page_table_print(pt);
+ 
 
-    } else if (runMode == 3) {          // CUSTOM
+    } else if (runMode == 3) {          // CUSTOM - second chance fifo
         numPageFaults++;
         int tmp = page % numFrames;
+        int val = search(0, numFrames - 1, page);
 
-        if (ptArr[tmp] == page) {
+        // Page has not been accessed on this round or the last
+
+        if (ptArr[tmp] == page || val > NOT_FOUND) {
 
             page_table_set_entry(pt, page, tmp, PROT_READ|PROT_WRITE);
-            
             numPageFaults--;
 
-        } else if (ptArr[tmp] == NOT_FOUND) {
+        } else if (ptArr[tmp] == NOT_FOUND) {  // page has not been read
 
             page_table_set_entry(pt, page, tmp, PROT_READ);
             disk_read(disk, page, &pmem[tmp * PAGE_SIZE]);
@@ -134,13 +142,21 @@ void page_fault_handler( struct page_table *pt, int page )
         }
 
         ptArr[tmp] = page;
-        //page_table_print(pt);
 
     } else {
         printf("page fault on page #%d\n",page);
         exit(1);
     }
 
+}
+
+int search(int start, int end, int k) {         // simple linear search function
+    int i;
+    for (i = start; i <= end; i++) {
+        if (ptArr[i] == k)
+            return i;
+    }
+    return NOT_FOUND;
 }
 
 int main( int argc, char *argv[] )
@@ -162,6 +178,7 @@ int main( int argc, char *argv[] )
     else
         runMode = 3;
 
+    // Initialize page table array
     ptArr = (int *) malloc(nframes * sizeof(int));
     int loop;
     for (loop = 0; loop < nframes; loop++)      // populate with -1
@@ -201,6 +218,7 @@ int main( int argc, char *argv[] )
         fprintf(stderr,"unknown program: %s\n",argv[3]);
         return 1;
     }
+    // Print stats about program run
     printf("Page Faults: %d, Disk Writes: %d, Disk Reads: %d\n", numPageFaults, numDiskWrite, numDiskRead);
 
     page_table_delete(pt);
