@@ -17,15 +17,16 @@ how to use the page table and disk interfaces.
 
 #define NOT_FOUND -1
 
-struct disk *disk;
-int numPageFaults = 0;
-int numDiskWrite = 0;
-int numDiskRead = 0;
+struct disk *disk;      // disk
+int numPageFaults = 0;  // Number of page faults
+int numDiskWrite = 0;   // Number of disk writes
+int numDiskRead = 0;    // Number of disk reads
 int runMode;            // RAND, FIFO, or CUSTOM
 int *ptArr;
+int *scArr;
 int count = 0;
 
-int search(int start, int end, int k) {
+int search(int start, int end, int k) {         // simple linear search function
     int i;
     for (i = start; i <= end; i++) {
         if (ptArr[i] == k)
@@ -34,20 +35,23 @@ int search(int start, int end, int k) {
     return NOT_FOUND;
 }
 
-
 void page_fault_handler( struct page_table *pt, int page )
 {
-    int numPages = page_table_get_npages(pt);
-    int numFrames = page_table_get_nframes(pt);
-    char *pmem = page_table_get_physmem(pt);
+    int numPages = page_table_get_npages(pt);       // Number of pages
+    int numFrames = page_table_get_nframes(pt);     // Number of frames
+    char *pmem = page_table_get_physmem(pt);        // Physical memory pointer
+    //char *scbits = page_table_get_virtsmem(pt);
 
-    if (numFrames >= numPages) {
+    if (numFrames >= numPages) {    // Getting started
         printf("Page fault on page #%d\n", page);
+        
         page_table_set_entry(pt, page, page, PROT_READ|PROT_WRITE);
         numPageFaults++;
+
         numDiskWrite = 0;
         numDiskRead = 0;
-    } else if (runMode == 1) {
+
+    } else if (runMode == 1) {      // RAND
         numPageFaults++;
 
         int val = search(0, numFrames - 1, page);
@@ -78,9 +82,9 @@ void page_fault_handler( struct page_table *pt, int page )
             page_table_set_entry(pt, page, tmp, PROT_READ);
             ptArr[tmp] = page;
         }
-        page_table_print(pt);
+        //page_table_print(pt);
 
-    } else if (runMode == 2) {
+    } else if (runMode == 2) {          // FIFO
         numPageFaults++;
         int val = search(0, numFrames - 1, page);
 
@@ -102,12 +106,41 @@ void page_fault_handler( struct page_table *pt, int page )
 
         ptArr[count] = page;
         count = (count + 1) % numFrames;
-        page_table_print(pt);
-        
+        //page_table_print(pt);
+
+    } else if (runMode == 3) {          // CUSTOM
+        numPageFaults++;
+        int tmp = page % numFrames;
+
+        if (ptArr[tmp] == page) {
+
+            page_table_set_entry(pt, page, tmp, PROT_READ|PROT_WRITE);
+            
+            numPageFaults--;
+
+        } else if (ptArr[tmp] == NOT_FOUND) {
+
+            page_table_set_entry(pt, page, tmp, PROT_READ);
+            disk_read(disk, page, &pmem[tmp * PAGE_SIZE]);
+            numDiskRead++;
+
+        } else {
+
+            disk_write(disk, ptArr[tmp], &pmem[tmp * PAGE_SIZE]);
+            disk_read(disk, page, &pmem[tmp * PAGE_SIZE]);
+            numDiskWrite++;
+            numDiskRead++;
+            page_table_set_entry(pt, page, tmp, PROT_READ);
+        }
+
+        ptArr[tmp] = page;
+        //page_table_print(pt);
+
+    } else {
+        printf("page fault on page #%d\n",page);
+        exit(1);
     }
 
-    //printf("page fault on page #%d\n",page);
-    //exit(1);
 }
 
 int main( int argc, char *argv[] )
@@ -133,6 +166,10 @@ int main( int argc, char *argv[] )
     int loop;
     for (loop = 0; loop < nframes; loop++)      // populate with -1
         ptArr[loop] = -1;
+
+    scArr = (int *) malloc(nframes * sizeof(int));
+    for (loop = 0; loop < nframes; loop++)      // populate with -1
+        scArr[loop] = -1;
 
     disk = disk_open("myvirtualdisk",npages);
     if(!disk) {
@@ -164,6 +201,7 @@ int main( int argc, char *argv[] )
         fprintf(stderr,"unknown program: %s\n",argv[3]);
         return 1;
     }
+    printf("Page Faults: %d, Disk Writes: %d, Disk Reads: %d\n", numPageFaults, numDiskWrite, numDiskRead);
 
     page_table_delete(pt);
     disk_close(disk);
