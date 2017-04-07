@@ -42,6 +42,7 @@ void page_fault_handler( struct page_table *pt, int page )
     int frame;
     //char *scbits = page_table_get_virtsmem(pt);
     page_table_get_entry(pt, page, &frame, &bits);
+    printf("page fault = %d\n", numPageFaults);
 
     if (numFrames >= numPages) {    // Getting started
         //printf("Page fault on page #%d\n", page);
