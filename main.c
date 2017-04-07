@@ -127,7 +127,7 @@ void page_fault_handler( struct page_table *pt, int page )
         int i = 0;
         int replace;
         int tmp = page % numFrames;
-        //int val = search(0, numFrames - 1, page);
+        int val = search(0, numFrames - 1, page);
 
         for(i = 0; i < page_table_get_npages(pt); i++) {
             if (pageFaults[i] < min) {
