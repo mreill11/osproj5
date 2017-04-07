@@ -238,7 +238,7 @@ int main( int argc, char *argv[] )
 
     struct page_table *pt = page_table_create( npages, nframes, page_fault_handler );
     if(!pt) {
-        fprintf(stderr,"couldn't create page table: %s\n",strerror(errno));
+        //fprintf(stderr,"couldn't create page table: %s\n",strerror(errno));
         return 1;
     }
 
