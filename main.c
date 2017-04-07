@@ -14,6 +14,7 @@ how to use the page table and disk interfaces.
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <limits.h>
 
 #define NOT_FOUND -1
 
@@ -27,6 +28,7 @@ int runMode;            // RAND, FIFO, or CUSTOM
 int *ptArr;             // Page Table array
 int *scArr;
 int *clockArr;
+int *pageFaults = NULL;
 int count = 0;          // counter
 
 
@@ -35,6 +37,7 @@ void page_fault_handler( struct page_table *pt, int page )
     int numPages = page_table_get_npages(pt);       // Number of pages
     int numFrames = page_table_get_nframes(pt);     // Number of frames
     char *pmem = page_table_get_physmem(pt);        // Physical memory pointer
+    pageFaults[page]++;
     //char *scbits = page_table_get_virtsmem(pt);
 
     if (numFrames >= numPages) {    // Getting started
@@ -117,12 +120,37 @@ void page_fault_handler( struct page_table *pt, int page )
 
     } else if (runMode == 3) {          // CUSTOM - second chance fifo
         numPageFaults++;
+        int min = INT_MAX, 
+        int i = 0;
+        int replace;
         int tmp = page % numFrames;
         int val = search(0, numFrames - 1, page);
 
+        for(i = 0; i < page_table_get_npages(pt); i++) {
+            if (pageFaults[i] < min) {
+                min = pageFaults[i];
+                replace = i;
+            }
+        }
+
+        for(i = 0; i < nframes; i++) {
+            if(ptArr[i] == replace) {
+                break;
+            }
+        }
+
+        if(val != PROT_READ) {
+            disk_write(disk, ptArr[tmp], &pmem[tmp * PAGE_SIZE]);
+            numDiskWrite++;
+        }
+
+        disk_read(disk, page, &pmem[tmp * PAGE_SIZE]);
+        numDiskRead++;
+        page_table_set_entry(pt, page, tmp, PROT_READ);
+
         // Page has not been accessed on this round or the last
 
-        if (ptArr[tmp] == page || val > NOT_FOUND) {
+        /*if (ptArr[tmp] == page || val > NOT_FOUND) {
 
             page_table_set_entry(pt, page, tmp, PROT_READ|PROT_WRITE);
             numPageFaults--;
@@ -142,7 +170,7 @@ void page_fault_handler( struct page_table *pt, int page )
             page_table_set_entry(pt, page, tmp, PROT_READ);
         }
 
-        ptArr[tmp] = page;
+        ptArr[tmp] = page;*/
 
     } else {
         printf("page fault on page #%d\n",page);
@@ -193,6 +221,12 @@ int main( int argc, char *argv[] )
     if(!disk) {
         fprintf(stderr,"couldn't create virtual disk: %s\n",strerror(errno));
         return 1;
+    }
+
+    pageFaults = realloc(pageFaults, npages*sizeof(int));
+    int z;
+    for(z = 0; z < npages; z++) {
+        pageFaults[z] = 0;
     }
 
 
