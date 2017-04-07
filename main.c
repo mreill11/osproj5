@@ -260,7 +260,7 @@ int main( int argc, char *argv[] )
         return 1;
     }
     // Print stats about program run
-    printf("Page Faults: %d, Disk Writes: %d, Disk Reads: %d\n", numPageFaults, numDiskWrite, numDiskRead);
+    printf("Page Faults: %d\nDisk Writes: %d\nDisk Reads: %d\n", numPageFaults, numDiskWrite, numDiskRead);
 
     page_table_delete(pt);
     disk_close(disk);
